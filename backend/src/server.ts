@@ -3,7 +3,14 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
 
-dotenv.config();
+// Only load .env file in development
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
+
+// Debug: Log DATABASE_URL (masked)
+const dbUrl = process.env.DATABASE_URL || 'NOT SET';
+console.log('DATABASE_URL:', dbUrl.replace(/:[^:@]+@/, ':****@'));
 
 const app = express();
 const PORT = process.env.PORT || 5000;
