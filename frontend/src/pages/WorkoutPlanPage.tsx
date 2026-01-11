@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DayOfWeek, Category, Exercise, WorkoutPlan } from '../types/exercise.types';
-import { getAllExercises, getExercisesByCategory } from '../api/exercises.api';
+import { getAllExercises } from '../api/exercises.api';
 import { createWorkoutPlan, updateWorkoutPlan, getWorkoutPlanByDay } from '../api/workoutPlans.api';
 
 interface SelectedExercise {
@@ -120,10 +120,10 @@ const WorkoutPlanPage: React.FC = () => {
       };
 
       if (existingPlan) {
-        await updateWorkoutPlan(existingPlan.id, planData);
+        await updateWorkoutPlan(existingPlan.id, planData as any);
         alert('Workout plan updated successfully!');
       } else {
-        await createWorkoutPlan(planData);
+        await createWorkoutPlan(planData as any);
         alert('Workout plan created successfully!');
       }
 

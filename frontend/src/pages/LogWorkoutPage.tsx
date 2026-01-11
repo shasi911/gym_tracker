@@ -104,7 +104,7 @@ const LogWorkoutPage: React.FC = () => {
           sets: log.sets,
           notes: ''
         }))
-      });
+      } as any);
 
       alert('Workout logged successfully!');
       setExerciseLogs([]);
