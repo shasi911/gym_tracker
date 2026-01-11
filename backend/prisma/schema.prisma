@@ -1,0 +1,156 @@
+// Prisma Schema for Gym Workout Tracker
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id           String   @id @default(uuid())
+  userId       String   @unique  // Login identifier (username)
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workoutPlans    WorkoutPlan[]
+  workoutSessions WorkoutSession[]
+}
+
+// Exercise Definition - Master list of all exercises
+model Exercise {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  category    Category
+  muscleGroups String[] // ["chest", "triceps"] for compound exercises
+  equipment   String?  // "barbell", "dumbbell", "machine", "bodyweight"
+  difficulty  Difficulty @default(INTERMEDIATE)
+  instructions String?  // How to perform
+  videoUrl    String?  // Tutorial video link
+  imageUrl    String?  // Exercise demonstration image
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workoutExercises WorkoutExercise[]
+  workoutLogs      WorkoutLog[]
+
+  @@index([category])
+  @@index([muscleGroups])
+}
+
+// Categories for organizing exercises
+enum Category {
+  PUSH        // Chest, shoulders, triceps
+  PULL        // Back, biceps
+  LEGS        // Quads, hamstrings, calves, glutes
+  CHEST
+  SHOULDERS
+  BACK
+  ARMS        // Biceps + Triceps
+  CORE        // Abs, obliques
+  CARDIO
+  FULL_BODY
+  OLYMPIC     // Olympic lifts
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+// Days of the week enum
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// Workout Plan Template - User's planned workout for each day
+model WorkoutPlan {
+  id          String    @id @default(uuid())
+  name        String    // "My Push Day", "Monday Workout"
+  dayOfWeek   DayOfWeek
+  isActive    Boolean   @default(true)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // User ownership
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  exercises   WorkoutExercise[]
+  workoutSessions WorkoutSession[]
+
+  @@index([dayOfWeek])
+  @@index([userId])
+}
+
+// Join table: Links exercises to workout plans with sets/reps template
+model WorkoutExercise {
+  id              String  @id @default(uuid())
+  workoutPlanId   String
+  exerciseId      String
+  orderIndex      Int     // Order in the workout (1, 2, 3...)
+  plannedSets     Int     @default(3)
+  plannedReps     Int     @default(10)
+  plannedWeight   Float?  // Optional default weight
+  restSeconds     Int     @default(60)
+  notes           String?
+
+  workoutPlan     WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise        Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([workoutPlanId, exerciseId])
+  @@index([workoutPlanId])
+}
+
+// Workout Session - Actual workout performed on a specific date
+model WorkoutSession {
+  id              String   @id @default(uuid())
+  date            DateTime @default(now())
+  dayOfWeek       DayOfWeek
+  workoutPlanId   String?  // Optional reference to plan
+  duration        Int?     // Duration in minutes
+  notes           String?
+  completed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // User ownership
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workoutPlan     WorkoutPlan? @relation(fields: [workoutPlanId], references: [id], onDelete: SetNull)
+  logs            WorkoutLog[]
+
+  @@index([date])
+  @@index([dayOfWeek])
+  @@index([userId])
+}
+
+// Workout Log - Individual exercise performed in a session
+model WorkoutLog {
+  id                String   @id @default(uuid())
+  workoutSessionId  String
+  exerciseId        String
+  sets              Json     // Array of SetLog objects
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  workoutSession    WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  exercise          Exercise       @relation(fields: [exerciseId], references: [id])
+
+  @@index([workoutSessionId])
+  @@index([exerciseId])
+}
